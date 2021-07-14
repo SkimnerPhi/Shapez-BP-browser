@@ -1,3 +1,5 @@
+import BUILDINGS from "../json/building.json";
+
 const TILE_SIZE = 96;
 const TILE_OVERLAP = 6;
 const TILE_REAL_SIZE = TILE_SIZE - 2 * TILE_OVERLAP;
