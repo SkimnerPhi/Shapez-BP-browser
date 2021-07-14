@@ -2,6 +2,7 @@ const TILE_SIZE = 96;
 const TILE_OVERLAP = 6;
 const TILE_REAL_SIZE = TILE_SIZE - 2 * TILE_OVERLAP;
 
+// Not called function :?
 function renderBlueprint(bpString, bgStyle = BG_DARK) {
     if (!bpString) {
         bpString = window.location.hash.substring(1);
@@ -18,10 +19,16 @@ function parseBlueprintString(bp) {
     const blueprint = JSON.parse(LZString.decompressFromEncodedURIComponent(bp));
 
     // First pass to determine bounds
-    let minX = Number.MAX_SAFE_INTEGER,
-        minY = Number.MAX_SAFE_INTEGER;
-    let maxX = Number.MIN_SAFE_INTEGER,
-        maxY = Number.MIN_SAFE_INTEGER;
+    // let minX = Number.MAX_SAFE_INTEGER,
+    //     minY = Number.MAX_SAFE_INTEGER;
+    // let maxX = Number.MIN_SAFE_INTEGER,
+    //     maxY = Number.MIN_SAFE_INTEGER;
+
+    // Instead of max/min safe integer, infinity would be safer (change it if you don't like it :P)
+    let minX = Infinity,
+        minY = Infinity;
+    let maxX = -Infinity,
+        maxY = -Infinity;
 
     for (let idx = 0; idx < blueprint.length; idx++) {
         const code = blueprint[idx].components.StaticMapEntity.code;
@@ -105,9 +112,9 @@ function parseBlueprintString(bp) {
             }
         }
     }
-
     return ret;
 }
+
 function drawBelts(ctx, blueprint) {
     for (let y = 0; y < blueprint.h; y++) {
         for (let x = 0; x < blueprint.w; x++) {
@@ -207,6 +214,7 @@ function translate(x, y, r, i, j) {
             return [x - j, y - i];
     }
 }
+
 function neighborCoords(x, y, facing) {
     switch (facing) {
         case 0:
@@ -221,7 +229,7 @@ function neighborCoords(x, y, facing) {
 }
 
 const BG_NONE = -1;
-const BG_LIGHT = 0;
+const BG_LIGHT = 0; // <== unused
 const BG_DARK = 1;
 const BG_COLORS = {
     background: ["#ffffff", "#3e3f47"],
