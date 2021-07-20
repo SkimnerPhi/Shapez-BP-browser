@@ -37,8 +37,8 @@ const backgroundColors = {
   dark: {
     background: '#3e3f47',
     gridLines: '#42434b',
-    border: '#83d8ff',
-    outOfBounds: '#f7f7ff',
+    border: '#156abc',
+    outOfBounds: '#292930',
   },
 };
 const blueprintMargin = 1;
@@ -157,21 +157,15 @@ function ready(json) {
     const deltaX = (2 * (e.offsetX - lastPos.x)) / render.width;
     const deltaY = (2 * (e.offsetY - lastPos.y)) / render.height;
     lastPos = { x: e.offsetX, y: e.offsetY };
-
-    const x = view.x + deltaX / view.scale;
-    const y = view.y + deltaY / view.scale;
-
-    // // CURSED !!!
-    // const w = (((render.width * view.scale - viewport.width) / 2) / viewport.width) / (view.scale * ((render.width / viewport.width) / 2));
-    // const h = (((render.height * view.scale - viewport.height) / 2) / viewport.height) / (view.scale * ((render.height / viewport.height) / 2));
-
-    // // Moved into a function because we also use this on zoom !
-    // const w = 1 - viewport.width / (render.width * view.scale);
-    // const h = 1 - viewport.height / (render.height * view.scale);
-    // view.x = clamp(x, -w, w);
-    // view.y = clamp(y, -h, h);
-
-    fixViewPosition(x, y, render, view);
+    
+    [view.x, view.y] = translateCamera(
+      deltaX / view.scale,
+      deltaY / view.scale,
+      view,
+      render,
+      viewport
+    );
+    
     redrawViewport(viewport, render, view, style);
   });
 
@@ -179,8 +173,9 @@ function ready(json) {
     e.preventDefault();
 
     view.scale = clamp(view.scale * (1 - Math.sign(e.deltaY) / 5), view.minScale, mode.scaleBounds.max);
-
-    fixViewPosition(view.x, view.y, render, view);
+    
+    [view.x, view.y] = translateCamera(0, 0, view, render, viewport);
+    
     redrawViewport(viewport, render, view, style);
   });
 
@@ -192,34 +187,28 @@ function ready(json) {
     viewport.height = viewport.clientHeight;
 
     view.minScale = clamp(
-      Math.max(viewport.width / render.width, viewport.height / render.height),
+      Math.min(viewport.width / render.width, viewport.height / render.height),
       mode.scaleBounds.min,
       mode.scaleBounds.max
     );
 
     view.scale = clamp(view.scale * deltaWidth * deltaHeight, view.minScale, mode.scaleBounds.max);
-
+    
+    [view.x, view.y] = translateCamera(0, 0, view, render, viewport);
+    
     redrawViewport(viewport, render, view, style);
   }).observe(viewport);
 
   redrawViewport(viewport, render, view, style);
-
-  // try{
-  //   document.getElementById('copy-render').addEventListener('click', () => {
-  //     render.toBlob(blob => {
-  //       navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-  //     });
-  //   });
-  // } catch(ex) {
-  //   console.log(ex);
-  // }
 }
 
-function fixViewPosition(x, y, render, view) {
-  const w = 1 - viewport.width / (render.width * view.scale);
-  const h = 1 - viewport.height / (render.height * view.scale);
-  view.x = clamp(x, -w, w);
-  view.y = clamp(y, -h, h);
+function translateCamera(deltaX, deltaY, view, render, viewport) {
+  const limitX = Math.max(0, 1 - viewport.width / (render.width * view.scale));
+  const limitY = Math.max(0, 1 - viewport.height / (render.height * view.scale));
+  return [
+    clamp(view.x + deltaX, -limitX, limitX),
+    clamp(view.y + deltaY, -limitY, limitY)
+  ];
 }
 
 function clamp(value, min, max) {
@@ -397,14 +386,6 @@ function drawSprite(ctx, mode, building) {
   const ctxY = mode.realSize * (building.y + 0.5) + mode.borderWidth;
   const ctxR = (building.rotation * Math.PI) / 2;
 
-  const smallSpriteGroup = [
-    'beltStraight',
-    'beltIn',
-    'beltOut'
-  ]
-
-  const off = smallSpriteGroup.includes(building.type.internal) ? mode.borderWidth : 0;
-
   ctx.translate(ctxX, ctxY);
   ctx.rotate(ctxR);
 
@@ -415,9 +396,9 @@ function drawSprite(ctx, mode, building) {
     mode.size * building.type.width,
     mode.size * building.type.height,
     mode.realSize * -0.5 - mode.overlap * building.type.width,
-    mode.realSize * -0.5 - mode.overlap * building.type.height - off / 2,
+    mode.realSize * -0.5 - mode.overlap * building.type.height,
     mode.size * building.type.width,
-    mode.size * building.type.height + off
+    mode.size * building.type.height
   );
 
   ctx.rotate(-ctxR);
